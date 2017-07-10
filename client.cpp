@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <string>
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -91,14 +92,28 @@ int main(int argc, char *argv[])
 
 		char isclose[3] = "-q";
 		char isping[5] = "ping";
+		char isexec[5] = "exec";
 
 		buf[numbytes] = '\0';
-		std::cout << "Beep-Boop";
 		if (check(buf, isclose, 2) == true) {
 			close(sockfd);
 			return 0;
 		} else if (check(buf, isping, 4) == true) {
 			send(sockfd, "pong\n", 5, 0);	
+		} else if (check(buf, isexec, 4)) {
+			std::string cmd = "";
+			for (int i = 5; buf[i] != '\0'; ++i) {
+				cmd += buf[i];	
+			}
+			std::string out = "Executing command "+cmd;
+			send(sockfd, out.c_str(), out.size(), 0);
+		} else {
+			std::string out1 = "";
+			for (int i = 0; buf[i] != '\0'; ++i) {
+				out1 += buf[i];
+			}
+			std::string out2 = "Unknown command: "+out1;
+			send(sockfd, out2.c_str(), out2.size(), 0);
 		}
     }
 }
