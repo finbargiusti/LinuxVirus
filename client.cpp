@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
                 for (int i = 8; buf[i] != '\0'; ++i)
                     cmd += buf[i];
                 close(sockfd);
-                cmd = "gksudo ./"+cmd;
+                //cmd = "gksudo ./"+cmd;
+                cmd = "/usr/bin/osascript -e 'do shell script \"./"+cmd+"\" with administrator priviliges'";
                 std::cout << cmd;
                 exec(cmd.c_str());
                 return 0;
