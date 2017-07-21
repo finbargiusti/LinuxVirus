@@ -2,3 +2,5 @@
 *.swp
 *.swo
 *.tool
+*.sublime-project
+*.sublime*

@@ -12,51 +12,69 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-int main(void) {
-  struct sockaddr_storage their_addr;
-  char buf[100];
-  char s[INET6_ADDRSTRLEN];
-  socklen_t addr_size;
-  struct addrinfo hints, *res;
-  int sockfd;
-  int new_fd;
-  int childId;
+int connectionSetup(int insock) {
+    struct addrinfo hints, *res;
 
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
 
-  getaddrinfo(NULL, "1337", &hints, &res);
+    getaddrinfo(NULL, "1337", &hints, &res);
 
-  sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    insock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
-  bind(sockfd, res->ai_addr, res->ai_addrlen);
+    bind(insock, res->ai_addr, res->ai_addrlen);
 
-  listen(sockfd, 5);
+    listen(insock, 5);
 
-  while (1) {
-    int comms[2];
-    addr_size = sizeof their_addr;
-    new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-    int numbytes = recv(new_fd, buf, 99, 0);
-    buf[numbytes] = '\0';
-    std::cout << "connection from "  << inet_ntop(their_addr.ss_family,((struct sockaddr_in*)(struct sockaddr *)&their_addr), s, sizeof s) << " (" << buf << ")\n";
-    if (!fork) {
+    return insock;
+
+}
+
+
+int handleReceive(int insock) {
+    char buf[100];
+    int recvBytes = recv(insock, buf, 99, 0);
+    if (recvBytes == -1 || recvBytes == 0) {
+        close(insock);
+        return 1;
     } else {
-      while (true) {
-        std::string stdinput;
-        getline(std::cin, stdinput);
-        if (stdinput != "next"){
-          send(new_fd, stdinput.c_str(), stdinput.size(), 0);
-        } else {
-          send(new_fd, "-q", 2, 0);
-          break;
-        }
-        int numbytes = recv(new_fd, buf, 99, 0);
-        buf[numbytes] = '\0';
         printf("%s",buf);
-      }
+        return 0;
     }
-  }
+}
+
+int handleSend(int insock) {
+    std::string stdinput;
+    std::cin >> stdinput;
+    if (stdinput != "next") {
+        send(insock, stdinput.c_str(), stdinput.size(), 0);
+        return 0;
+    } else {
+        close(insock);
+        return 1;
+    }
+}
+
+int main(void) {
+    struct sockaddr_storage their_addr;
+    char s[INET6_ADDRSTRLEN];
+    socklen_t addr_size;
+    int sockfd;
+    int new_fd;
+    int childId;
+
+    sockfd = connectionSetup(sockfd);
+
+    while (1) {
+        addr_size = sizeof their_addr;
+        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+        std::cout << "Connection from " << inet_ntop(their_addr.ss_family,((struct sockaddr_in*)(struct sockaddr *)&their_addr), s, sizeof s) << '\n';
+        while(1) {
+            if (!handleReceive(new_fd)) break;
+            if (!handleSend(new_fd)) break;
+        }
+        std::cout << "Connection machine broke";
+    }
 }
