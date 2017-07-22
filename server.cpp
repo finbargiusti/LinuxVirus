@@ -29,26 +29,38 @@ int connectionSetup(int insock) {
     listen(insock, 5);
 
     return insock;
-
 }
 
 
-int handleReceive(int insock) {
-    char buf[100];
-    int recvBytes = recv(insock, buf, 99, 0);
-    if (recvBytes == -1 || recvBytes == 0) {
-        close(insock);
-        return 1;
+std::string handleReceive(int insock) {
+    char sizebuf[4];
+    std::string receivedString;
+    int numbytes = read(insock, sizebuf, 4);
+    if (numbytes != -1) {
+        int bytesToRecv = ((int*)sizebuf)[0];
+        char buf[bytesToRecv];
+        int bytesRemaining = bytesToRecv;
+        while (bytesRemaining > 0) {
+            int res = read(insock, buf + (bytesToRecv - bytesRemaining), 100);
+            if (res == -1) return "-1";
+            bytesRemaining -= res;
+        }
+        buf[bytesToRecv] = '\0';
+        receivedString = std::string(buf);
+        return receivedString;
     } else {
-        printf("%s",buf);
-        return 0;
-    }
+        return "-1";
+    }   
+
 }
 
 int handleSend(int insock) {
     std::string stdinput;
     std::cin >> stdinput;
+    std::cout << stdinput;
+    fflush(stdout);
     if (stdinput != "next") {
+        send(insock, (char *)((int)stdinput.size()), 4, 0);
         send(insock, stdinput.c_str(), stdinput.size(), 0);
         return 0;
     } else {
@@ -72,8 +84,10 @@ int main(void) {
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
         std::cout << "Connection from " << inet_ntop(their_addr.ss_family,((struct sockaddr_in*)(struct sockaddr *)&their_addr), s, sizeof s) << '\n';
         while(1) {
-            if (!handleReceive(new_fd)) break;
             if (!handleSend(new_fd)) break;
+            std::string received = handleReceive(new_fd);
+            printf("%s\n", received.c_str());
+            fflush(stdout);
         }
         std::cout << "Connection machine broke";
     }
