@@ -41,7 +41,7 @@ std::string handleReceive(int insock) {
         char buf[bytesToRecv];
         int bytesRemaining = bytesToRecv;
         while (bytesRemaining > 0) {
-            int res = read(insock, buf + (bytesToRecv - bytesRemaining), 100);
+            int res = read(insock, buf + (bytesToRecv - bytesRemaining), bytesRemaining);
             if (res == -1) return "-1";
             bytesRemaining -= res;
         }
@@ -51,16 +51,14 @@ std::string handleReceive(int insock) {
     } else {
         return "-1";
     }   
-
 }
 
 int handleSend(int insock) {
     std::string stdinput;
     std::cin >> stdinput;
-    std::cout << stdinput;
-    fflush(stdout);
     if (stdinput != "next") {
-        send(insock, (char *)((int)stdinput.size()), 4, 0);
+        int sendsize = (int)stdinput.size();
+        send(insock, (char *)&sendsize, 4, 0);
         send(insock, stdinput.c_str(), stdinput.size(), 0);
         return 0;
     } else {

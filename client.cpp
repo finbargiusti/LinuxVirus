@@ -62,11 +62,12 @@ std::string handleReceive(int insock) {
     std::string receivedString;
     int numbytes = read(insock, sizebuf, 4);
     if (numbytes != -1) {
+        std::cout << sizebuf << std::endl;
         int bytesToRecv = ((int*)sizebuf)[0];
         char buf[bytesToRecv];
         int bytesRemaining = bytesToRecv;
         while (bytesRemaining > 0) {
-            int res = read(insock, buf + (bytesToRecv - bytesRemaining), 100);
+            int res = read(insock, buf + (bytesToRecv - bytesRemaining), bytesRemaining);
             if (res == -1) return "-1";
             bytesRemaining -= res;
         }
